@@ -204,6 +204,96 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* The Technology Section */}
+      <section className="py-24 px-8 bg-[#0D1117]">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-[#2D9E5F] font-mono text-xs uppercase tracking-widest mb-4">
+            THE TECHNOLOGY
+          </p>
+          <h2 className="text-white text-3xl font-bold mb-16 max-w-2xl">
+            Two breakthroughs that make TRAXS possible.
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#161B22] border border-[#30363D] rounded p-8">
+              <div className="mb-6">
+                <span className="text-[#2D9E5F] font-mono text-xs border border-[#2D9E5F]/30 bg-[#2D9E5F]/10 px-2 py-1 rounded-sm">
+                  BREAKTHROUGH 01
+                </span>
+              </div>
+              <h3 className="text-white text-lg font-semibold mb-3">
+                Cell Tower Triangulation — No GPS Required
+              </h3>
+              <p className="text-[#8B949E] text-sm leading-relaxed mb-6">
+                When a danfo driver dials *384*1# to start their trip, their feature phone
+                connects to the nearest cell tower. TRAXS reads that signal through Africa's
+                Talking API and triangulates the driver's position passively — updating every
+                few minutes as the vehicle moves between towers. No smartphone. No GPS chip.
+                No data plan required. A ₦3,000 Nokia becomes a live mobility sensor.
+              </p>
+              <div className="space-y-2 border-t border-[#30363D] pt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">Driver dials USSD</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ Tower ping captured</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">Vehicle moves</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ Tower handoff logged</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">Trip ends</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ ₦50 airtime credited</span>
+                </div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-[#30363D] flex items-center gap-3">
+                <span className="text-[#2D9E5F] font-mono text-2xl font-bold">60%</span>
+                <span className="text-[#8B949E] text-xs">
+                  of Nigeria uses feature phones — all now reachable as mobility sensors
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-[#161B22] border border-[#30363D] rounded p-8">
+              <div className="mb-6">
+                <span className="text-[#2D9E5F] font-mono text-xs border border-[#2D9E5F]/30 bg-[#2D9E5F]/10 px-2 py-1 rounded-sm">
+                  BREAKTHROUGH 02
+                </span>
+              </div>
+              <h3 className="text-white text-lg font-semibold mb-3">
+                Crowd Inference — Vehicles Detected Without Trackers
+              </h3>
+              <p className="text-[#8B949E] text-sm leading-relaxed mb-6">
+                When 8 or more passenger devices move in the same direction, at the same
+                speed, within 100 metres of each other — TRAXS declares a vehicle. Amazon
+                SageMaker runs this clustering model in real time across all incoming
+                location signals. The vehicle's occupancy, route, and position are derived
+                automatically. No tracker on the vehicle. No driver cooperation needed.
+                The passengers collectively become the sensor.
+              </p>
+              <div className="space-y-2 border-t border-[#30363D] pt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">8+ devices cluster</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ Vehicle inferred</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">Cluster size measured</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ Occupancy estimated</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#8B949E] text-xs font-mono">Driver trace overlaps</span>
+                  <span className="text-[#2D9E5F] text-xs font-mono">→ Vehicle identity linked</span>
+                </div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-[#30363D] flex items-center gap-3">
+                <span className="text-[#2D9E5F] font-mono text-2xl font-bold">0</span>
+                <span className="text-[#8B949E] text-xs">
+                  hardware trackers needed — entirely software-derived vehicle intelligence
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Who It Serves Section */}
       <section id="who-it-serves" className="bg-[#0D1117] py-24 px-6">
         <div className="max-w-7xl mx-auto">
@@ -300,6 +390,9 @@ export default function LandingPage() {
       {/* Key Metrics Section */}
       <section className="bg-[#0D1117] py-24 px-6">
         <div className="max-w-7xl mx-auto">
+          <p className="text-[#8B949E] text-sm font-mono text-center mb-12 tracking-wide">
+            The scale of the problem. The simplicity of the solution.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="bg-[#161B22] border border-[#30363D] p-8 rounded text-center">
               <div className="text-white font-mono text-5xl font-bold mb-2">4M+</div>
@@ -320,6 +413,38 @@ export default function LandingPage() {
               <div className="text-white font-mono text-5xl font-bold mb-2">3</div>
               <div className="text-[#8B949E] text-sm">Data streams feeding the intelligence layer</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Demo Callout */}
+      <section className="py-16 px-8 bg-[#161B22] border-t border-b border-[#30363D]">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+          <div>
+            <p className="text-[#2D9E5F] font-mono text-xs uppercase tracking-widest mb-3">
+              LIVE DEMO
+            </p>
+            <h3 className="text-white text-2xl font-bold mb-2">
+              The system is running right now.
+            </h3>
+            <p className="text-[#8B949E] text-sm max-w-lg">
+              Open the live dashboard to watch drivers activate, vehicles get inferred
+              from passenger clusters, and ghost corridors surface in real time across
+              Lagos. The simulator lets you trigger events and watch the intelligence
+              layer respond.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 flex-shrink-0">
+            <button
+              onClick={() => navigate('/map')}
+              className="bg-[#1A6B3C] hover:bg-[#2D9E5F] text-white text-sm font-medium px-8 py-3 rounded transition-colors whitespace-nowrap">
+              Open Live Map
+            </button>
+            <button
+              onClick={() => navigate('/simulator')}
+              className="border border-[#30363D] hover:border-[#8B949E] text-[#8B949E] hover:text-white text-sm font-medium px-8 py-3 rounded transition-colors whitespace-nowrap">
+              Open Simulator
+            </button>
           </div>
         </div>
       </section>
