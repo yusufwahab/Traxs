@@ -10,10 +10,36 @@ export default function LandingPage() {
       {/* Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0D1117] border-b border-[#30363D] h-14">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <div>
-            <div className="font-bold text-white">TRAXS</div>
-            <div className="text-xs text-[#8B949E]">Transport Real-time Analytics & Exchange System</div>
-          </div>
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            {/* TRAXS Logo Icon */}
+            <div className="w-8 h-8 bg-[#1A6B3C] rounded-md flex items-center justify-center relative overflow-hidden">
+              {/* Road/Route pattern */}
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="relative z-10">
+                {/* Curved road lines */}
+                <path 
+                  d="M2 10 C6 6, 14 6, 18 10 M2 10 C6 14, 14 14, 18 10" 
+                  stroke="white" 
+                  strokeWidth="1.5" 
+                  fill="none" 
+                  strokeLinecap="round"
+                />
+                {/* Data points/nodes */}
+                <circle cx="4" cy="8" r="1.5" fill="#F4A823" />
+                <circle cx="10" cy="6" r="1.5" fill="#F4A823" />
+                <circle cx="16" cy="8" r="1.5" fill="#F4A823" />
+                <circle cx="6" cy="12" r="1.5" fill="white" />
+                <circle cx="14" cy="12" r="1.5" fill="white" />
+              </svg>
+              {/* Background pattern for depth */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2D9E5F] to-[#1A6B3C] opacity-20"></div>
+            </div>
+            
+            <div>
+              <div className="font-bold text-white">TRAXS</div>
+              <div className="text-xs text-[#8B949E] leading-tight">Transport Real-time Analytics & Exchange System</div>
+            </div>
+          </Link>
+          
           <div className="flex items-center gap-6">
             <a href="#" className="text-[#8B949E] hover:text-white transition-colors hidden sm:block">
               View Documentation
@@ -29,19 +55,31 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center px-6 pt-14">
-        <div className="text-center max-w-4xl">
-          <div className="border border-[#30363D] bg-[#161B22] text-[#8B949E] font-mono text-xs tracking-widest px-3 py-1 rounded-sm inline-block mb-8">
+      <section 
+        className="min-h-screen flex items-center justify-center px-6 pt-14 relative overflow-hidden"
+        style={{
+          backgroundImage: `url('/NigeriaCity.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Single clean overlay — dark enough for text, light enough to see the city */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, rgba(13,17,23,0.45) 50%, rgba(13,17,23,0.75) 100%)' }}></div>
+        
+        {/* Content */}
+        <div className="text-center max-w-4xl relative z-10">
+          <div className="border border-white/20 text-[#A8D8B9] font-mono text-xs tracking-widest px-3 py-1 rounded-sm inline-block mb-8">
             [ MOBILITY INTELLIGENCE PLATFORM ]
           </div>
           
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6">
-            Nigeria's cities move<br />
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6 text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
+            Nigeria&#39;s cities move<br />
             every day. Now they<br />
             can see themselves move.
           </h1>
           
-          <p className="text-[#8B949E] text-base max-w-[560px] mx-auto mb-8">
+          <p className="text-[#C9D1D9] text-base max-w-[560px] mx-auto mb-8" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
             TRAXS transforms fragmented informal transit data into 
             structured intelligence for city planners, investors, and government.
           </p>
@@ -50,30 +88,31 @@ export default function LandingPage() {
             <Link 
               to="/map"
               className="bg-[#1A6B3C] text-white px-6 py-2.5 rounded hover:bg-[#2D9E5F] transition-colors"
+              style={{ boxShadow: '0 0 20px rgba(26,107,60,0.5)' }}
             >
               Open Live Dashboard
             </Link>
             <button 
               onClick={handleScrollToHowItWorks}
-              className="bg-transparent border border-[#30363D] text-white px-6 py-2.5 rounded hover:bg-[#161B22] transition-colors"
+              className="border border-white/30 text-white px-6 py-2.5 rounded hover:bg-white/10 transition-colors backdrop-blur-sm"
             >
               Read the Brief
             </button>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm border border-white/15 rounded-lg px-6 py-4 backdrop-blur-md" style={{ background: 'rgba(13,17,23,0.5)' }}>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-white">4M+</span>
+              <span className="font-mono text-[#2D9E5F] text-xl font-bold">4M+</span>
               <span className="text-[#8B949E] text-xs">daily trips</span>
             </div>
-            <div className="hidden sm:block text-[#30363D]">|</div>
+            <div className="hidden sm:block text-white/20">|</div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-white">0</span>
+              <span className="font-mono text-[#2D9E5F] text-xl font-bold">0</span>
               <span className="text-[#8B949E] text-xs">data collected before TRAXS</span>
             </div>
-            <div className="hidden sm:block text-[#30363D]">|</div>
+            <div className="hidden sm:block text-white/20">|</div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-white">5</span>
+              <span className="font-mono text-[#2D9E5F] text-xl font-bold">5</span>
               <span className="text-[#8B949E] text-xs">AWS services</span>
             </div>
           </div>
