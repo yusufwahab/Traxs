@@ -166,6 +166,16 @@ export default function LandingPage() {
             </h2>
           </div>
           
+          <div className="w-full flex justify-center mb-16">
+            <div className="w-full max-w-[900px] rounded overflow-hidden border border-[#30363D]">
+              <img
+                src="/images/ussd-flow.png"
+                alt="TRAXS Driver Activation Flow — from USSD dial to airtime reward"
+                className="w-full h-auto object-cover"
+              />
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-[#0D1117] border border-[#30363D] p-6 rounded">
               <div className="text-[#1A6B3C] font-mono text-xs mb-4">01</div>
