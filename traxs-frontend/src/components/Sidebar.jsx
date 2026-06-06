@@ -5,7 +5,7 @@ import LiveBadge from './shared/LiveBadge';
 import { useStore } from '../store/useStore';
 
 const NAV = [
-  { to: '/',           icon: Map,       label: 'Live Map'    },
+  { to: '/map',        icon: Map,       label: 'Live Map'    },
   { to: '/planner',    icon: BarChart2,  label: 'Planner'     },
   { to: '/investor',   icon: TrendingUp, label: 'Investor'    },
   { to: '/government', icon: Building2,  label: 'Government'  },
