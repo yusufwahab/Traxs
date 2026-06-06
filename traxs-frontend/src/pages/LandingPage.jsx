@@ -1,61 +1,40 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
-  const handleScrollToHowItWorks = () => {
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-white">
       {/* Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0D1117] border-b border-[#30363D] h-14">
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {/* TRAXS Logo Icon */}
-            <div className="w-8 h-8 bg-[#1A6B3C] rounded-md flex items-center justify-center relative overflow-hidden">
-              {/* Road/Route pattern */}
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="relative z-10">
-                {/* Curved road lines */}
-                <path 
-                  d="M2 10 C6 6, 14 6, 18 10 M2 10 C6 14, 14 14, 18 10" 
-                  stroke="white" 
-                  strokeWidth="1.5" 
-                  fill="none" 
-                  strokeLinecap="round"
-                />
-                {/* Data points/nodes */}
-                <circle cx="4" cy="8" r="1.5" fill="#F4A823" />
-                <circle cx="10" cy="6" r="1.5" fill="#F4A823" />
-                <circle cx="16" cy="8" r="1.5" fill="#F4A823" />
-                <circle cx="6" cy="12" r="1.5" fill="white" />
-                <circle cx="14" cy="12" r="1.5" fill="white" />
-              </svg>
-              {/* Background pattern for depth */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#2D9E5F] to-[#1A6B3C] opacity-20"></div>
-            </div>
-            
-            <div>
-              <div className="font-bold text-white">TRAXS</div>
-              <div className="text-xs text-[#8B949E] leading-tight">Transport Real-time Analytics & Exchange System</div>
-            </div>
-          </Link>
-          
-          <div className="flex items-center gap-6">
-            <a href="#" className="text-[#8B949E] hover:text-white transition-colors hidden sm:block">
-              View Documentation
-            </a>
-            <Link 
-              to="/map" 
-              className="bg-[#1A6B3C] text-white px-4 py-1.5 rounded text-sm hover:bg-[#2D9E5F] transition-colors"
-            >
-              Open Dashboard
-            </Link>
-          </div>
+      <nav
+        style={{ background: 'rgba(13, 17, 23, 0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+        className="fixed top-0 left-0 right-0 z-50 border-b border-[#30363D] h-14 flex items-center px-8"
+      >
+        <Link to="/" className="flex flex-col justify-center hover:opacity-80 transition-opacity">
+          <span className="text-white font-bold text-lg tracking-tight">TRAXS</span>
+          <span className="text-[#8B949E] text-[10px] font-mono tracking-widest uppercase">
+            Transport Real-time Analytics &amp; Exchange System
+          </span>
+        </Link>
+
+        <div className="ml-auto flex items-center gap-6">
+          <a href="#how-it-works" className="text-[#8B949E] text-sm hover:text-white transition-colors hidden md:block">
+            How It Works
+          </a>
+          <a href="#who-it-serves" className="text-[#8B949E] text-sm hover:text-white transition-colors hidden md:block">
+            Who It Serves
+          </a>
+          <button
+            onClick={() => navigate('/map')}
+            className="bg-[#1A6B3C] hover:bg-[#2D9E5F] text-white text-sm px-4 py-1.5 rounded transition-colors"
+          >
+            Open Dashboard
+          </button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section 
+      <section
         className="min-h-screen flex items-center justify-center px-6 pt-14 relative overflow-hidden"
         style={{
           backgroundImage: `url('/NigeriaCity.png')`,
@@ -64,56 +43,67 @@ export default function LandingPage() {
           backgroundRepeat: 'no-repeat'
         }}
       >
-        {/* Single clean overlay — dark enough for text, light enough to see the city */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, rgba(13,17,23,0.45) 50%, rgba(13,17,23,0.75) 100%)' }}></div>
-        
-        {/* Content */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{ background: 'linear-gradient(to bottom, rgba(13,17,23,0.75) 0%, rgba(13,17,23,0.35) 40%, rgba(13,17,23,0.55) 100%)' }}
+        />
+
         <div className="text-center max-w-4xl relative z-10">
-          <div className="border border-white/20 text-[#A8D8B9] font-mono text-xs tracking-widest px-3 py-1 rounded-sm inline-block mb-8">
-            [ MOBILITY INTELLIGENCE PLATFORM ]
+          <div className="inline-block border border-[#30363D] px-3 py-1 rounded-sm mb-6">
+            <span className="text-[#2D9E5F] font-mono text-xs tracking-[0.2em] uppercase">
+              Mobility Intelligence Platform
+            </span>
           </div>
-          
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6 text-white" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.8)' }}>
-            Nigeria&#39;s cities move<br />
-            every day. Now they<br />
-            can see themselves move.
+
+          <h1
+            className="text-white font-bold tracking-tight mb-6"
+            style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)', lineHeight: '1.1', textShadow: '0 2px 20px rgba(0,0,0,0.8)', maxWidth: '720px', margin: '0 auto 1.5rem' }}
+          >
+            Nigeria&#39;s cities move every day.<br />
+            Now they can see themselves move.
           </h1>
-          
-          <p className="text-[#C9D1D9] text-base max-w-[560px] mx-auto mb-8" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
-            TRAXS transforms fragmented informal transit data into 
-            structured intelligence for city planners, investors, and government.
+
+          <p
+            className="text-[#cbd5e1] text-base mb-10 max-w-[520px] mx-auto leading-relaxed"
+            style={{ textShadow: '0 1px 12px rgba(0,0,0,0.9)' }}
+          >
+            TRAXS transforms fragmented informal transit data into structured intelligence
+            for city planners, investors, and government.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link 
-              to="/map"
-              className="bg-[#1A6B3C] text-white px-6 py-2.5 rounded hover:bg-[#2D9E5F] transition-colors"
-              style={{ boxShadow: '0 0 20px rgba(26,107,60,0.5)' }}
+
+          <div className="flex items-center gap-4 justify-center mb-16">
+            <button
+              onClick={() => navigate('/map')}
+              className="bg-[#1A6B3C] hover:bg-[#2D9E5F] text-white text-sm font-medium px-6 py-2.5 rounded transition-colors"
             >
               Open Live Dashboard
-            </Link>
-            <button 
-              onClick={handleScrollToHowItWorks}
-              className="border border-white/30 text-white px-6 py-2.5 rounded hover:bg-white/10 transition-colors backdrop-blur-sm"
+            </button>
+            <button
+              onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-white text-sm font-medium px-6 py-2.5 rounded transition-colors border border-white/30 hover:border-white/60"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
             >
               Read the Brief
             </button>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm border border-white/15 rounded-lg px-6 py-4 backdrop-blur-md" style={{ background: 'rgba(13,17,23,0.5)' }}>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[#2D9E5F] text-xl font-bold">4M+</span>
-              <span className="text-[#8B949E] text-xs">daily trips</span>
+
+          <div
+            className="flex items-center gap-8 justify-center px-8 py-4 rounded"
+            style={{ background: 'rgba(13,17,23,0.55)', backdropFilter: 'blur(8px)', border: '1px solid rgba(48,54,61,0.6)' }}
+          >
+            <div className="text-center">
+              <span className="text-[#2D9E5F] font-mono font-bold text-2xl">4M+</span>
+              <span className="text-[#8B949E] text-xs ml-2">daily trips</span>
             </div>
-            <div className="hidden sm:block text-white/20">|</div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[#2D9E5F] text-xl font-bold">0</span>
-              <span className="text-[#8B949E] text-xs">data collected before TRAXS</span>
+            <div className="w-px h-6 bg-[#30363D]" />
+            <div className="text-center">
+              <span className="text-[#2D9E5F] font-mono font-bold text-2xl">0</span>
+              <span className="text-[#8B949E] text-xs ml-2">data collected before TRAXS</span>
             </div>
-            <div className="hidden sm:block text-white/20">|</div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[#2D9E5F] text-xl font-bold">5</span>
-              <span className="text-[#8B949E] text-xs">AWS services</span>
+            <div className="w-px h-6 bg-[#30363D]" />
+            <div className="text-center">
+              <span className="text-[#2D9E5F] font-mono font-bold text-2xl">5</span>
+              <span className="text-[#8B949E] text-xs ml-2">AWS services</span>
             </div>
           </div>
         </div>
@@ -205,7 +195,7 @@ export default function LandingPage() {
       </section>
 
       {/* Who It Serves Section */}
-      <section className="bg-[#0D1117] py-24 px-6">
+      <section id="who-it-serves" className="bg-[#0D1117] py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-left mb-12">
             <div className="text-[#1A6B3C] font-mono text-xs uppercase tracking-widest mb-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { Map, BarChart2, TrendingUp, Building2, Terminal } from 'lucide-react';
 import LiveBadge from './shared/LiveBadge';
 import { useStore } from '../store/useStore';
@@ -42,27 +42,41 @@ export default function Sidebar() {
     }}>
 
       {/* Logo */}
-      <div style={{
-        padding: '18px 0',
-        paddingLeft: collapsed ? '0' : '20px',
+      <Link to="/" style={{
+        padding: '14px 0',
+        paddingLeft: collapsed ? '0' : '16px',
         display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'flex-start',
         gap: '10px',
         borderBottom: '1px solid #30363D',
         flexShrink: 0,
+        textDecoration: 'none',
+        cursor: 'pointer',
       }}>
-        <span style={{
-          fontFamily: 'monospace', fontWeight: 700, fontSize: '15px',
-          color: '#1A6B3C', letterSpacing: '0.05em', flexShrink: 0,
+        {/* Icon */}
+        <div style={{
+          width: 28, height: 28,
+          background: '#1A6B3C',
+          borderRadius: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          position: 'relative', overflow: 'hidden',
         }}>
-          TX
-        </span>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style={{ position: 'relative', zIndex: 1 }}>
+            <path d="M2 10 C6 6, 14 6, 18 10 M2 10 C6 14, 14 14, 18 10" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            <circle cx="4" cy="8" r="1.5" fill="#F4A823" />
+            <circle cx="10" cy="6" r="1.5" fill="#F4A823" />
+            <circle cx="16" cy="8" r="1.5" fill="#F4A823" />
+            <circle cx="6" cy="12" r="1.5" fill="white" />
+            <circle cx="14" cy="12" r="1.5" fill="white" />
+          </svg>
+        </div>
         {!collapsed && (
           <span style={{ fontWeight: 700, fontSize: '13px', color: '#E6EDF3', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>
             TRAXS
           </span>
         )}
-      </div>
+      </Link>
 
       {/* Nav links */}
       <nav style={{ flex: 1, paddingTop: '6px', overflowY: 'auto', overflowX: 'hidden' }}>
