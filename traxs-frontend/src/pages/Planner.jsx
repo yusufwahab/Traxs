@@ -36,22 +36,30 @@ function timeAgo(isoString) {
 }
 
 export default function Planner() {
-  const [data, setData] = useState({ ghostCorridors: [], heatmapData: [], congestionHotspots: [], vehiclesByZone: [] });
-  const [routeEvents, setRouteEvents] = useState([]);
+  const [data, setData] = useState(FALLBACK_OVERVIEW);
+  const [routeEvents, setRouteEvents] = useState(FALLBACK_EVENTS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let settled = false;
+
+    // Hard fallback after 4 seconds regardless of API state
+    const timer = setTimeout(() => {
+      if (!settled) { setData(FALLBACK_OVERVIEW); setRouteEvents(FALLBACK_EVENTS); setLoading(false); }
+    }, 4000);
+
     Promise.all([
       fetch(`${API}/api/intelligence/planner/overview`).then(r => r.json()).catch(() => null),
       fetch(`${API}/api/inference/events`).then(r => r.json()).catch(() => null),
     ]).then(([overview, events]) => {
-      const overviewData = overview?.success && overview.data?.heatmapData?.length
-        ? overview.data : FALLBACK_OVERVIEW;
-      const eventsData = events?.success && events.data?.length
-        ? events.data : FALLBACK_EVENTS;
-      setData(overviewData);
-      setRouteEvents(eventsData);
-    }).finally(() => setLoading(false));
+      settled = true;
+      clearTimeout(timer);
+      setData(overview?.success && overview.data?.heatmapData?.length ? overview.data : FALLBACK_OVERVIEW);
+      setRouteEvents(events?.success && events.data?.length ? events.data : FALLBACK_EVENTS);
+    }).catch(() => { settled = true; clearTimeout(timer); })
+      .finally(() => setLoading(false));
+
+    return () => clearTimeout(timer);
   }, []);
 
   const ghostCorridors = data.ghostCorridors || [];

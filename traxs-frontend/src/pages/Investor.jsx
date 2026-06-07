@@ -26,16 +26,28 @@ const FALLBACK_ROUTES = MOCK_CORRIDORS.map(c => ({
 }));
 
 export default function Investor() {
-  const [routes, setRoutes] = useState([]);
+  const [routes, setRoutes] = useState(FALLBACK_ROUTES);
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) { setRoutes(FALLBACK_ROUTES); setLoading(false); }
+    }, 4000);
+
     fetch(`${API}/api/intelligence/investor/routes`)
       .then(r => r.json())
-      .then(json => { setRoutes(json.success && json.data?.length ? json.data : FALLBACK_ROUTES); })
-      .catch(() => setRoutes(FALLBACK_ROUTES))
+      .then(json => {
+        settled = true;
+        clearTimeout(timer);
+        setRoutes(json.success && json.data?.length ? json.data : FALLBACK_ROUTES);
+      })
+      .catch(() => { settled = true; clearTimeout(timer); setRoutes(FALLBACK_ROUTES); })
       .finally(() => setLoading(false));
+
+    return () => clearTimeout(timer);
   }, []);
 
   const sorted = [...routes].sort((a, b) =>

@@ -103,15 +103,81 @@ function timeAgo(isoString) {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
+function watClock() {
+  const now = new Date();
+  return {
+    date: now.toLocaleDateString('en-NG', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+      timeZone: 'Africa/Lagos',
+    }).toUpperCase(),
+    time: now.toLocaleTimeString('en-NG', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'Africa/Lagos', hour12: false,
+    }),
+  };
+}
+
 export default function LiveMap() {
   const [layers, setLayers] = useState(LAYERS_DEFAULT);
   const [passengerDots, setPassengerDots] = useState([]);
+  const [clock, setClock] = useState(watClock);
+
+  useEffect(() => {
+    const id = setInterval(() => setClock(watClock()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const activeDrivers       = useStore((s) => s.activeDrivers);
   const inferredVehicles    = useStore((s) => s.inferredVehicles);
   const routeEvents         = useStore((s) => s.routeEvents);
   const passengerEventCount = useStore((s) => s.passengerEventCount);
   const simulatedDriver     = useStore((s) => s.simulatedDriver);
+
+  // Animated positions for driver/vehicle markers
+  const animPos = useRef({});   // id → { lat, lng, originLat, originLng, dlat, dlng, ticks }
+  const [, setTick] = useState(0);
+
+  // Seed each new entity into animPos (only once per id)
+  useEffect(() => {
+    [...activeDrivers, ...inferredVehicles].forEach(e => {
+      const id   = e.driverId || e.vehicleId;
+      const lat  = e.lat ?? e.currentLocation?.coordinates?.[1];
+      const lng  = e.lng ?? e.currentLocation?.coordinates?.[0];
+      if (!lat || !lng || animPos.current[id]) return;
+      animPos.current[id] = {
+        lat, lng,
+        originLat: lat, originLng: lng,
+        dlat: (Math.random() - 0.5) * 0.0003,
+        dlng: (Math.random() - 0.5) * 0.0003,
+        ticks: 0,
+      };
+    });
+  }, [activeDrivers, inferredVehicles]);
+
+  // Drift loop — every 1.5 s move each marker, bounce at boundary, shift direction occasionally
+  useEffect(() => {
+    const id = setInterval(() => {
+      Object.values(animPos.current).forEach(p => {
+        p.lat   += p.dlat;
+        p.lng   += p.dlng;
+        p.ticks += 1;
+        if (Math.abs(p.lat - p.originLat) > 0.005) p.dlat *= -1;
+        if (Math.abs(p.lng - p.originLng) > 0.005) p.dlng *= -1;
+        if (p.ticks % 8 === 0) {
+          p.dlat = (Math.random() - 0.5) * 0.0003;
+          p.dlng = (Math.random() - 0.5) * 0.0003;
+        }
+      });
+      setTick(c => c + 1);
+    }, 1500);
+    return () => clearInterval(id);
+  }, []);
+
+  // Helper — returns animated [lat, lng] pair or store fallback
+  const ap = (id, fallLat, fallLng) => {
+    const p = animPos.current[id];
+    return [p ? p.lat : fallLat, p ? p.lng : fallLng];
+  };
 
   // Local passenger dot animation — new dot every 800ms, max 30 visible, auto-expire 6s
   useEffect(() => {
@@ -160,7 +226,7 @@ export default function LiveMap() {
         {/* Active Drivers */}
         {layers.drivers && activeDrivers.map((d) =>
           d.lat && d.lng ? (
-            <Marker key={d.driverId} position={[d.lat, d.lng]} icon={greenIcon}>
+            <Marker key={d.driverId} position={ap(d.driverId, d.lat, d.lng)} icon={greenIcon}>
               <Popup>
                 <div style={{ minWidth: '150px', background: '#161B22', color: '#E6EDF3' }}>
                   <p style={{ fontFamily: 'monospace', fontSize: '12px', margin: '0 0 4px', color: '#1A6B3C' }}>{d.driverId}</p>
@@ -178,7 +244,7 @@ export default function LiveMap() {
         {/* Inferred Vehicles */}
         {layers.vehicles && inferredVehicles.map((v) =>
           v.lat && v.lng ? (
-            <Marker key={v.vehicleId} position={[v.lat, v.lng]} icon={amberIcon}>
+            <Marker key={v.vehicleId} position={ap(v.vehicleId, v.lat, v.lng)} icon={amberIcon}>
               <Popup>
                 <div style={{ minWidth: '150px', background: '#161B22', color: '#E6EDF3' }}>
                   <p style={{ fontFamily: 'monospace', fontSize: '12px', margin: '0 0 4px', color: '#F4A823' }}>{v.vehicleId}</p>
@@ -200,7 +266,7 @@ export default function LiveMap() {
           return (
             <Polyline
               key={`link-${v.vehicleId}`}
-              positions={[[v.lat, v.lng], [driver.lat, driver.lng]]}
+              positions={[ap(v.vehicleId, v.lat, v.lng), ap(driver.driverId, driver.lat, driver.lng)]}
               pathOptions={{ color: '#F4A823', weight: 1, opacity: 0.3, dashArray: '4 4' }}
             />
           );
@@ -281,6 +347,18 @@ export default function LiveMap() {
         borderRadius: '4px', padding: '16px 20px', zIndex: 1000,
         minWidth: '210px', backdropFilter: 'blur(4px)',
       }}>
+        {/* Live clock */}
+        <div style={{ borderBottom: '1px solid #30363D', marginBottom: '12px', paddingBottom: '12px' }}>
+          <p style={{ color: '#8B949E', fontSize: '9px', letterSpacing: '0.12em', margin: '0 0 3px' }}>
+            LAGOS TIME · WAT
+          </p>
+          <p style={{ color: '#8B949E', fontSize: '10px', fontFamily: 'monospace', margin: '0 0 2px' }}>
+            {clock.date}
+          </p>
+          <p style={{ color: '#2D9E5F', fontFamily: 'monospace', fontSize: '20px', fontWeight: 700, margin: 0, letterSpacing: '0.05em' }}>
+            {clock.time}
+          </p>
+        </div>
         <p style={{ color: '#8B949E', fontSize: '10px', letterSpacing: '0.08em', margin: '0 0 12px' }}>
           LIVE NETWORK
         </p>

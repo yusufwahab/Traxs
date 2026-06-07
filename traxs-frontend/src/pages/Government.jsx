@@ -40,18 +40,30 @@ function healthColor(score) {
 }
 
 export default function Government() {
-  const [cityHealth, setCityHealth] = useState(null);
+  const [cityHealth, setCityHealth] = useState(FALLBACK_CITY_HEALTH);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ policyType: POLICY_TYPES[0], zone: '' });
   const [simLoading, setSimLoading] = useState(false);
   const [simResult, setSimResult] = useState(null);
 
   useEffect(() => {
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) { setCityHealth(FALLBACK_CITY_HEALTH); setLoading(false); }
+    }, 4000);
+
     fetch(`${API}/api/intelligence/government/city-health`)
       .then(r => r.json())
-      .then(json => { setCityHealth(json.success && json.data ? json.data : FALLBACK_CITY_HEALTH); })
-      .catch(() => setCityHealth(FALLBACK_CITY_HEALTH))
+      .then(json => {
+        settled = true;
+        clearTimeout(timer);
+        setCityHealth(json.success && json.data ? json.data : FALLBACK_CITY_HEALTH);
+      })
+      .catch(() => { settled = true; clearTimeout(timer); setCityHealth(FALLBACK_CITY_HEALTH); })
       .finally(() => setLoading(false));
+
+    return () => clearTimeout(timer);
   }, []);
 
   const runSim = async () => {

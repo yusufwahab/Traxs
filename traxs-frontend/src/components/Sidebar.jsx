@@ -9,24 +9,36 @@ const NAV = [
   { to: '/planner',    icon: BarChart2,  label: 'Route Intelligence' },
   { to: '/investor',   icon: TrendingUp, label: 'Corridor Analytics' },
   { to: '/government', icon: Building2,  label: 'City Health'        },
-  { to: '/simulator',  icon: Terminal,   label: 'Control Room'       },
+  { to: '/simulator',  icon: Terminal,   label: 'USSD Simulation'    },
 ];
 
 const EXPANDED_W = 220;
 const COLLAPSED_W = 56;
 
+function watTime() {
+  return new Date().toLocaleTimeString('en-NG', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: 'Africa/Lagos', hour12: false,
+  });
+}
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [clockStr, setClockStr] = useState(watTime);
   const activeDrivers    = useStore((s) => s.activeDrivers);
   const inferredVehicles = useStore((s) => s.inferredVehicles);
   const isConnected      = useStore((s) => s.isConnected);
 
   const w = collapsed ? COLLAPSED_W : EXPANDED_W;
 
-  // Keep a CSS variable in sync so App.jsx main content can offset correctly
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
   }, [w]);
+
+  useEffect(() => {
+    const id = setInterval(() => setClockStr(watTime()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <aside style={{
@@ -143,7 +155,8 @@ export default function Sidebar() {
           padding: '12px 0',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-end',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          paddingLeft: collapsed ? '0' : '16px',
           paddingRight: collapsed ? '0' : '16px',
           fontSize: '12px',
           gap: '6px',
@@ -154,16 +167,22 @@ export default function Sidebar() {
         onMouseEnter={(e) => (e.currentTarget.style.color = '#E6EDF3')}
         onMouseLeave={(e) => (e.currentTarget.style.color = '#8B949E')}
       >
-        {/* Chevron arrow — points inward */}
-        <svg
-          width="14" height="14" viewBox="0 0 14 14" fill="none"
-          style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }}
-        >
-          <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
         {!collapsed && (
-          <span style={{ fontSize: '11px', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>COLLAPSE</span>
+          <span style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+            {clockStr}
+          </span>
         )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+          <svg
+            width="14" height="14" viewBox="0 0 14 14" fill="none"
+            style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
+          >
+            <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {!collapsed && (
+            <span style={{ fontSize: '11px', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>COLLAPSE</span>
+          )}
+        </div>
       </button>
     </aside>
   );

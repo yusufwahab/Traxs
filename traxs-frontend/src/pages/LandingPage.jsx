@@ -1,7 +1,21 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+
+function watTime() {
+  return new Date().toLocaleTimeString('en-NG', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: 'Africa/Lagos', hour12: false,
+  });
+}
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [clockStr, setClockStr] = useState(watTime);
+
+  useEffect(() => {
+    const id = setInterval(() => setClockStr(watTime()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-white">
@@ -24,6 +38,10 @@ export default function LandingPage() {
           <a href="#who-it-serves" className="text-[#8B949E] text-sm hover:text-white transition-colors hidden md:block">
             Who It Serves
           </a>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#8B949E', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
+            className="hidden md:inline">
+            {clockStr} WAT
+          </span>
           <button
             onClick={() => navigate('/map')}
             className="bg-[#1A6B3C] hover:bg-[#2D9E5F] text-white text-sm px-4 py-1.5 rounded transition-colors"

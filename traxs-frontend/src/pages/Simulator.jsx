@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { MOCK_BEDROCK_RESPONSES } from '../data/mockData';
 import USSDSimulator from '../components/USSDSimulator';
+import DriverDashboard from '../components/DriverDashboard';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -200,7 +201,7 @@ export default function Simulator() {
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: '960px' }}>
+    <div style={{ padding: '32px', maxWidth: '1400px' }}>
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#E6EDF3', margin: 0 }}>Demo Simulator</h1>
         <p style={{ color: '#8B949E', fontSize: '13px', margin: '4px 0 0' }}>
@@ -210,9 +211,14 @@ export default function Simulator() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-        {/* USSD Phone Simulator */}
-        <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '4px', padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
-          <USSDSimulator />
+        {/* USSD Phone + Driver Dashboard — 2-column */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+          <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '4px', padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
+            <USSDSimulator />
+          </div>
+          <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '4px', padding: '20px' }}>
+            <DriverDashboard />
+          </div>
         </div>
 
         {/* Section 1 */}
