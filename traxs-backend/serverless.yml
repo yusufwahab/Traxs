@@ -1,0 +1,449 @@
+service: traxs-backend
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 256
+  timeout: 29
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+    REGION: ${self:provider.region}
+    STAGE: ${self:provider.stage}
+    DRIVERS_TABLE: ${self:service}-drivers-${self:provider.stage}
+    PASSENGER_EVENTS_TABLE: ${self:service}-passenger-events-${self:provider.stage}
+    ROUTE_EVENTS_TABLE: ${self:service}-route-events-${self:provider.stage}
+    MOBILITY_SNAPSHOTS_TABLE: ${self:service}-mobility-snapshots-${self:provider.stage}
+    INFERRED_VEHICLES_TABLE: ${self:service}-inferred-vehicles-${self:provider.stage}
+    WEBSOCKET_CONNECTIONS_TABLE: ${self:service}-ws-connections-${self:provider.stage}
+    S3_RAW_BUCKET: ${self:service}-raw-events-${self:provider.stage}
+    SNS_ROUTE_ALERTS_TOPIC: !Ref RouteAlertsTopic
+    KINESIS_PASSENGER_STREAM: ${self:service}-passenger-events-${self:provider.stage}
+    WEBSOCKET_API_ENDPOINT: !Sub 'https://${WebsocketsApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+    BEDROCK_MODEL_ID: anthropic.claude-3-haiku-20240307-v1:0
+    CLIENT_URL: ${env:CLIENT_URL, 'http://localhost:5173'}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:UpdateItem',
+                   'dynamodb:DeleteItem', 'dynamodb:Query', 'dynamodb:Scan',
+                   'dynamodb:BatchWriteItem', 'dynamodb:BatchGetItem']
+          Resource:
+            - !GetAtt DriversTable.Arn
+            - !Sub '${DriversTable.Arn}/index/*'
+            - !GetAtt PassengerEventsTable.Arn
+            - !Sub '${PassengerEventsTable.Arn}/index/*'
+            - !GetAtt RouteEventsTable.Arn
+            - !Sub '${RouteEventsTable.Arn}/index/*'
+            - !GetAtt MobilitySnapshotsTable.Arn
+            - !Sub '${MobilitySnapshotsTable.Arn}/index/*'
+            - !GetAtt InferredVehiclesTable.Arn
+            - !Sub '${InferredVehiclesTable.Arn}/index/*'
+            - !GetAtt WebSocketConnectionsTable.Arn
+        - Effect: Allow
+          Action: ['s3:PutObject', 's3:GetObject']
+          Resource: !Sub '${RawEventsBucket.Arn}/*'
+        - Effect: Allow
+          Action: ['sns:Publish']
+          Resource: !Ref RouteAlertsTopic
+        - Effect: Allow
+          Action: ['kinesis:PutRecord', 'kinesis:PutRecords', 'kinesis:GetRecords',
+                   'kinesis:GetShardIterator', 'kinesis:DescribeStream', 'kinesis:ListStreams',
+                   'kinesis:ListShards']
+          Resource: !GetAtt PassengerEventStream.Arn
+        - Effect: Allow
+          Action: ['execute-api:ManageConnections']
+          Resource: '*'
+        - Effect: Allow
+          Action: ['bedrock:InvokeModel']
+          Resource: '*'
+
+functions:
+  # ── Health ────────────────────────────────────────────────────────────────
+  health:
+    handler: src/handlers/health.handler
+    events:
+      - http:
+          path: health
+          method: get
+          cors: true
+
+  # ── Drivers ───────────────────────────────────────────────────────────────
+  driversActivate:
+    handler: src/handlers/drivers/activate.handler
+    events:
+      - http:
+          path: api/drivers/activate
+          method: post
+          cors: true
+
+  driversLocation:
+    handler: src/handlers/drivers/location.handler
+    events:
+      - http:
+          path: api/drivers/location
+          method: post
+          cors: true
+
+  driversReport:
+    handler: src/handlers/drivers/report.handler
+    events:
+      - http:
+          path: api/drivers/report
+          method: post
+          cors: true
+
+  driversEndSession:
+    handler: src/handlers/drivers/endSession.handler
+    events:
+      - http:
+          path: api/drivers/end-session
+          method: post
+          cors: true
+
+  driversGetActive:
+    handler: src/handlers/drivers/getActive.handler
+    events:
+      - http:
+          path: api/drivers/active
+          method: get
+          cors: true
+
+  # ── Passengers ────────────────────────────────────────────────────────────
+  passengersEvent:
+    handler: src/handlers/passengers/event.handler
+    events:
+      - http:
+          path: api/passengers/event
+          method: post
+          cors: true
+
+  # ── Inference ─────────────────────────────────────────────────────────────
+  inferenceVehicles:
+    handler: src/handlers/inference/vehicles.handler
+    events:
+      - http:
+          path: api/inference/vehicles
+          method: get
+          cors: true
+
+  inferenceCorridors:
+    handler: src/handlers/inference/corridors.handler
+    events:
+      - http:
+          path: api/inference/corridors
+          method: get
+          cors: true
+
+  inferenceGhostCorridors:
+    handler: src/handlers/inference/ghostCorridors.handler
+    events:
+      - http:
+          path: api/inference/ghost-corridors
+          method: get
+          cors: true
+
+  inferenceEvents:
+    handler: src/handlers/inference/events.handler
+    events:
+      - http:
+          path: api/inference/events
+          method: get
+          cors: true
+
+  # ── Intelligence ──────────────────────────────────────────────────────────
+  intelligencePlannerOverview:
+    handler: src/handlers/intelligence/plannerOverview.handler
+    events:
+      - http:
+          path: api/intelligence/planner/overview
+          method: get
+          cors: true
+
+  intelligenceInvestorRoutes:
+    handler: src/handlers/intelligence/investorRoutes.handler
+    events:
+      - http:
+          path: api/intelligence/investor/routes
+          method: get
+          cors: true
+
+  intelligenceCityHealth:
+    handler: src/handlers/intelligence/cityHealth.handler
+    events:
+      - http:
+          path: api/intelligence/government/city-health
+          method: get
+          cors: true
+
+  intelligenceSimulatePolicy:
+    handler: src/handlers/intelligence/simulatePolicy.handler
+    events:
+      - http:
+          path: api/intelligence/government/simulate-policy
+          method: post
+          cors: true
+
+  intelligenceAsk:
+    handler: src/handlers/intelligence/ask.handler
+    timeout: 29
+    events:
+      - http:
+          path: api/intelligence/ask
+          method: post
+          cors: true
+
+  # ── USSD ──────────────────────────────────────────────────────────────────
+  ussdWebhook:
+    handler: src/handlers/ussd/webhook.handler
+    events:
+      - http:
+          path: api/ussd
+          method: post
+          cors: true
+
+  # ── WebSocket ─────────────────────────────────────────────────────────────
+  wsConnect:
+    handler: src/handlers/websocket/connect.handler
+    events:
+      - websocket:
+          route: $connect
+
+  wsDisconnect:
+    handler: src/handlers/websocket/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+
+  wsDefault:
+    handler: src/handlers/websocket/default.handler
+    events:
+      - websocket:
+          route: $default
+
+  # ── Kinesis Consumer (Crowd Inference) ────────────────────────────────────
+  kinesisProcessPassengerEvent:
+    handler: src/handlers/kinesis/processPassengerEvent.handler
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt PassengerEventStream.Arn
+          startingPosition: LATEST
+          batchSize: 10
+          bisectBatchOnFunctionError: true
+
+  # ── EventBridge (Mobility Snapshot every 5 min) ───────────────────────────
+  eventBridgeMobilitySnapshot:
+    handler: src/handlers/eventbridge/mobilitySnapshot.handler
+    events:
+      - schedule:
+          rate: rate(5 minutes)
+          enabled: true
+
+resources:
+  Resources:
+    # ── DynamoDB Tables ───────────────────────────────────────────────────────
+    DriversTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-drivers-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: driverId
+            AttributeType: S
+          - AttributeName: phoneNumber
+            AttributeType: S
+        KeySchema:
+          - AttributeName: driverId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: phone-index
+            KeySchema:
+              - AttributeName: phoneNumber
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    PassengerEventsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-passenger-events-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+          - AttributeName: deviceId
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: device-index
+            KeySchema:
+              - AttributeName: deviceId
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    RouteEventsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-route-events-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: eventId
+            AttributeType: S
+          - AttributeName: isActiveStr
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: active-time-index
+            KeySchema:
+              - AttributeName: isActiveStr
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    MobilitySnapshotsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-mobility-snapshots-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: corridorId
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+          - AttributeName: snapshotPk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: corridorId
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: all-time-index
+            KeySchema:
+              - AttributeName: snapshotPk
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    InferredVehiclesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-inferred-vehicles-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: vehicleId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: lastUpdated
+            AttributeType: S
+          - AttributeName: assignedRoute
+            AttributeType: S
+        KeySchema:
+          - AttributeName: vehicleId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: status-index
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: lastUpdated
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: route-index
+            KeySchema:
+              - AttributeName: assignedRoute
+                KeyType: HASH
+              - AttributeName: lastUpdated
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    WebSocketConnectionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-ws-connections-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    # ── S3 Bucket (Raw Event Archive) ─────────────────────────────────────────
+    RawEventsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-raw-events-${self:provider.stage}
+        LifecycleConfiguration:
+          Rules:
+            - Id: ArchiveOldEvents
+              Status: Enabled
+              Transitions:
+                - TransitionInDays: 30
+                  StorageClass: GLACIER
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    # ── SNS Topic (Route Alerts) ──────────────────────────────────────────────
+    RouteAlertsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-route-alerts-${self:provider.stage}
+        DisplayName: TRAXS Route Alerts
+
+    # ── Kinesis Data Stream (Passenger Events) ────────────────────────────────
+    PassengerEventStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: ${self:service}-passenger-events-${self:provider.stage}
+        ShardCount: 1
+        RetentionPeriodHours: 24
+
+  Outputs:
+    HttpApiUrl:
+      Description: HTTP API Gateway URL
+      Value: !Sub 'https://${ApiGatewayRestApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+    WebSocketApiUrl:
+      Description: WebSocket API Gateway URL
+      Value: !Sub 'wss://${WebsocketsApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+    RawEventsBucketName:
+      Description: S3 bucket for raw events
+      Value: !Ref RawEventsBucket
+    RouteAlertsTopicArn:
+      Description: SNS topic ARN for route alerts
+      Value: !Ref RouteAlertsTopic
+    PassengerStreamArn:
+      Description: Kinesis stream ARN for passenger events
+      Value: !GetAtt PassengerEventStream.Arn

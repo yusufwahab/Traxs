@@ -1,18 +1,46 @@
-const mongoose = require('mongoose');
+const { PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { dynamo } = require('../config/aws');
+const { tables } = require('../config/env');
+const { v4: uuidv4 } = require('uuid');
 
-const passengerEventSchema = new mongoose.Schema({
-  deviceId: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now },
-  location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true }
+const TABLE = tables.passengerEvents;
+const PARTITION = 'passenger_event';
+
+const PassengerEvent = {
+  async create(data) {
+    const eventId = uuidv4();
+    const timestamp = new Date().toISOString();
+    const item = {
+      pk: PARTITION,
+      sk: `${timestamp}#${eventId}`,
+      eventId,
+      timestamp,
+      deviceId: data.deviceId,
+      location: data.location,
+      speed: data.speed || 0,
+      heading: data.heading || 0,
+      motionType: data.motionType || 'walking',
+    };
+    await dynamo.send(new PutCommand({ TableName: TABLE, Item: item }));
+    return item;
   },
-  speed: Number,
-  heading: Number,
-  motionType: { type: String, enum: ['walking', 'bus', 'motorcycle', 'stationary'] }
-});
 
-passengerEventSchema.index({ location: '2dsphere' });
-passengerEventSchema.index({ timestamp: -1 });
+  async findSince(sinceIso) {
+    const { Items } = await dynamo.send(new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: 'pk = :pk AND sk >= :since',
+      ExpressionAttributeValues: {
+        ':pk': PARTITION,
+        ':since': sinceIso,
+      },
+    }));
+    return Items || [];
+  },
 
-module.exports = mongoose.model('PassengerEvent', passengerEventSchema);
+  async countSince(sinceIso) {
+    const items = await this.findSince(sinceIso);
+    return items.length;
+  },
+};
+
+module.exports = PassengerEvent;

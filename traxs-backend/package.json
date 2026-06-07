@@ -1,22 +1,29 @@
 {
   "name": "traxs-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "seed": "node src/seed.js"
+    "deploy": "serverless deploy",
+    "deploy:dev": "serverless deploy --stage dev",
+    "deploy:prod": "serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f",
+    "seed": "node src/seed.js",
+    "offline": "serverless offline"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.600.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-kinesis": "^3.600.0",
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/client-sns": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
     "dotenv": "^16.4.5",
-    "express": "^4.18.2",
-    "mongoose": "^8.3.4",
-    "node-cron": "^3.0.3",
-    "socket.io": "^4.7.5",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.8.0"
   }
 }

@@ -1,28 +1,25 @@
-const cron = require('node-cron');
 const PassengerEvent = require('../models/PassengerEvent');
 const InferredVehicle = require('../models/InferredVehicle');
 const MobilitySnapshot = require('../models/MobilitySnapshot');
+const { broadcast } = require('../utils/websocket');
 
 const CORRIDORS = [
   { id: 'oshodi-ikeja', name: 'Oshodi–Ikeja' },
   { id: 'cms-lekki', name: 'CMS–Lekki' },
   { id: 'ikorodu-cbd', name: 'Ikorodu–CBD' },
   { id: 'ikeja-oshodi', name: 'Ikeja–Oshodi' },
-  { id: 'lekki-vi', name: 'Lekki–Victoria Island' }
+  { id: 'lekki-vi', name: 'Lekki–Victoria Island' },
 ];
 
-async function takeSnapshot(io) {
-  const since = new Date(Date.now() - 5 * 60 * 1000);
+async function takeSnapshot() {
+  const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const passengerEvents = await PassengerEvent.countSince(since);
 
   for (const corridor of CORRIDORS) {
-    const [passengerEvents, activeVehicles] = await Promise.all([
-      PassengerEvent.countDocuments({ timestamp: { $gte: since } }),
-      InferredVehicle.find({ assignedRoute: corridor.id, status: 'active' })
-    ]);
-
+    const activeVehicles = await InferredVehicle.findActiveOnRoute(corridor.id, since);
     const vehicleCount = activeVehicles.length;
     const avgOccupancy = vehicleCount
-      ? activeVehicles.reduce((sum, v) => sum + v.estimatedOccupancy, 0) / vehicleCount
+      ? activeVehicles.reduce((sum, v) => sum + (v.estimatedOccupancy || 0), 0) / vehicleCount
       : 0;
 
     const demandScore = Math.min(100, Math.round((passengerEvents / 200) * 100));
@@ -30,7 +27,7 @@ async function takeSnapshot(io) {
     const loadFactor = avgOccupancy > 0 ? Math.min(100, Math.round((avgOccupancy / 18) * 100)) : 0;
     const ghostCorridor = demandScore > 70 && supplyScore < 30;
 
-    const snapshot = await MobilitySnapshot.create({
+    await MobilitySnapshot.create({
       corridorId: corridor.id,
       corridorName: corridor.name,
       passengerMovements: passengerEvents,
@@ -39,25 +36,16 @@ async function takeSnapshot(io) {
       loadFactor,
       demandScore,
       supplyScore,
-      ghostCorridor
+      ghostCorridor,
     });
 
-    if (io) {
-      io.emit('snapshot:updated', {
-        corridorId: corridor.id,
-        loadFactor,
-        demandScore,
-        ghostCorridor
-      });
-    }
+    await broadcast('snapshot:updated', {
+      corridorId: corridor.id,
+      loadFactor,
+      demandScore,
+      ghostCorridor,
+    });
   }
 }
 
-function startSnapshotCron(io) {
-  cron.schedule('*/5 * * * *', () => {
-    takeSnapshot(io).catch(err => console.error('Snapshot cron error:', err));
-  });
-  console.log('Mobility snapshot cron started (every 5 minutes)');
-}
-
-module.exports = { startSnapshotCron, takeSnapshot };
+module.exports = { takeSnapshot };
