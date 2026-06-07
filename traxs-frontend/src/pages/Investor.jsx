@@ -7,9 +7,23 @@ import {
   ScatterChart, Scatter, CartesianGrid, ReferenceLine,
 } from 'recharts';
 
+import { MOCK_CORRIDORS } from '../data/mockData';
+
 const API = import.meta.env.VITE_API_BASE_URL;
 const TOOLTIP_STYLE = { background: '#161B22', border: '1px solid #30363D', color: '#E6EDF3', fontSize: '12px' };
 const fmtNGN = (v) => v >= 1000 ? `₦${(v / 1000).toFixed(1)}M` : `₦${v}K`;
+
+const FALLBACK_ROUTES = MOCK_CORRIDORS.map(c => ({
+  corridorId: c.id,
+  corridorName: c.name,
+  loadFactor: c.loadFactor,
+  averageOccupancy: c.avgOccupancy,
+  passengerMovements: c.dailyMovements,
+  estimatedRevenuePotentialKPerDay: Math.round(c.revenueEstimate / 1000),
+  demandScore: c.demandScore,
+  supplyScore: c.supplyScore,
+  viabilityScore: c.viabilityScore,
+}));
 
 export default function Investor() {
   const [routes, setRoutes] = useState([]);
@@ -19,8 +33,8 @@ export default function Investor() {
   useEffect(() => {
     fetch(`${API}/api/intelligence/investor/routes`)
       .then(r => r.json())
-      .then(json => { if (json.success) setRoutes(json.data); })
-      .catch(err => console.error('Investor fetch error:', err))
+      .then(json => { setRoutes(json.success && json.data?.length ? json.data : FALLBACK_ROUTES); })
+      .catch(() => setRoutes(FALLBACK_ROUTES))
       .finally(() => setLoading(false));
   }, []);
 

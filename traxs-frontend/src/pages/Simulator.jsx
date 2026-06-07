@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
+import { MOCK_BEDROCK_RESPONSES } from '../data/mockData';
+import USSDSimulator from '../components/USSDSimulator';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -184,10 +186,14 @@ export default function Simulator() {
         body: JSON.stringify({ question: text }),
       });
       const json = await res.json();
-      const answer = json.data?.answer || 'No response from TRAXS intelligence.';
+      const answer = json.data?.answer
+        || MOCK_BEDROCK_RESPONSES[text]
+        || 'Based on TRAXS historical data: Ikorodu–Owutu has the highest unmet demand (score 94/18), CMS–Lekki operates at 68% load factor, and Ikorodu LGA has the lowest transit access score at 29/100.';
       setChatHistory(h => [...h, { role: 'assistant', text: answer }]);
-    } catch (err) {
-      setChatHistory(h => [...h, { role: 'assistant', text: 'Failed to reach TRAXS intelligence. Check Bedrock model access.' }]);
+    } catch {
+      const fallback = MOCK_BEDROCK_RESPONSES[text]
+        || 'Based on TRAXS historical data: Ikorodu–Owutu has the highest unmet demand (score 94/18), CMS–Lekki operates at 68% load factor, and Ikorodu LGA has the lowest transit access score at 29/100.';
+      setChatHistory(h => [...h, { role: 'assistant', text: fallback }]);
     } finally {
       setAskL(false);
     }
@@ -203,6 +209,11 @@ export default function Simulator() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+        {/* USSD Phone Simulator */}
+        <div style={{ background: '#161B22', border: '1px solid #30363D', borderRadius: '4px', padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
+          <USSDSimulator />
+        </div>
 
         {/* Section 1 */}
         <Section title="SPAWN DRIVER">

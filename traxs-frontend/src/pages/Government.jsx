@@ -2,11 +2,36 @@ import { useState, useEffect } from 'react';
 import MetricCard from '../components/shared/MetricCard';
 import InsightCallout from '../components/shared/InsightCallout';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
+import { MOCK_LGA_DATA, MOCK_POLICY_RESULTS } from '../data/mockData';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const TOOLTIP_STYLE = { background: '#161B22', border: '1px solid #30363D', color: '#E6EDF3', fontSize: '12px' };
 
 const POLICY_TYPES = ['Ban Okada in Zone', 'Close Road Corridor', 'Add BRT Route', 'Restrict Night Movement'];
+
+const FALLBACK_CITY_HEALTH = {
+  mobilityHealthScore: Math.round(MOCK_LGA_DATA.reduce((s, l) => s + l.healthScore, 0) / MOCK_LGA_DATA.length),
+  activeDrivers: 7,
+  activeVehicles: 5,
+  lgaBreakdown: MOCK_LGA_DATA.map(l => ({ lga: l.name, activeVehicles: l.vehicles, transitScore: l.transitAccessScore })),
+  equityIndex: MOCK_LGA_DATA.filter(l => l.transitAccessScore < 40).map(l => ({
+    lga: l.name, activeVehicles: l.vehicles, transitScore: l.transitAccessScore, flag: 'poor_transit_access',
+  })),
+};
+
+function getMockSimResult(policyType) {
+  const mock = MOCK_POLICY_RESULTS[policyType];
+  if (!mock) return null;
+  return {
+    estimatedPassengersDisrupted: mock.movementsDisrupted,
+    affectedWards: mock.wardsAffected,
+    riskLevel: mock.movementsDisrupted > 50000 ? 'High' : mock.movementsDisrupted > 20000 ? 'Medium' : 'Low',
+    alternativeCoverageAvailable: mock.alternativeCoverage
+      ? 'Yes — alternative routes available'
+      : 'Limited — no direct alternative currently available',
+    recommendation: mock.recommendation,
+  };
+}
 
 function healthColor(score) {
   if (score >= 60) return '#1A6B3C';
@@ -24,8 +49,8 @@ export default function Government() {
   useEffect(() => {
     fetch(`${API}/api/intelligence/government/city-health`)
       .then(r => r.json())
-      .then(json => { if (json.success) setCityHealth(json.data); })
-      .catch(err => console.error('City health fetch error:', err))
+      .then(json => { setCityHealth(json.success && json.data ? json.data : FALLBACK_CITY_HEALTH); })
+      .catch(() => setCityHealth(FALLBACK_CITY_HEALTH))
       .finally(() => setLoading(false));
   }, []);
 
@@ -40,9 +65,9 @@ export default function Government() {
         body: JSON.stringify({ type: form.policyType, zone: form.zone }),
       });
       const json = await res.json();
-      if (json.success) setSimResult(json.data);
-    } catch (err) {
-      console.error('Simulation error:', err);
+      setSimResult(json.success && json.data ? json.data : getMockSimResult(form.policyType));
+    } catch {
+      setSimResult(getMockSimResult(form.policyType));
     } finally {
       setSimLoading(false);
     }

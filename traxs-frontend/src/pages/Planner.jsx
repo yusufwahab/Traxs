@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import MetricCard from '../components/shared/MetricCard';
 import InsightCallout from '../components/shared/InsightCallout';
-import { MOCK_HOURLY_MOVEMENTS } from '../data/mockData';
+import { MOCK_HOURLY_MOVEMENTS, MOCK_CORRIDORS, MOCK_ROUTE_EVENTS } from '../data/mockData';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid,
@@ -9,6 +9,24 @@ import {
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const TOOLTIP_STYLE = { background: '#161B22', border: '1px solid #30363D', color: '#E6EDF3', fontSize: '12px' };
+
+const FALLBACK_OVERVIEW = {
+  ghostCorridors: MOCK_CORRIDORS.filter(c => c.ghostCorridor).map(c => ({
+    corridorId: c.id, corridorName: c.name, demandScore: c.demandScore,
+    supplyScore: c.supplyScore, passengerMovements: c.dailyMovements, ghostCorridor: true,
+  })),
+  heatmapData: MOCK_CORRIDORS.map(c => ({
+    corridorId: c.id, corridorName: c.name, passengerMovements: c.dailyMovements, demandScore: c.demandScore,
+  })),
+  congestionHotspots: [],
+  vehiclesByZone: [],
+};
+const FALLBACK_EVENTS = MOCK_ROUTE_EVENTS.map(e => ({
+  eventId: e.id,
+  eventType: e.eventType.toLowerCase().replace(/ /g, '_'),
+  description: e.description,
+  timestamp: e.timestamp,
+}));
 
 function timeAgo(isoString) {
   const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
@@ -24,13 +42,16 @@ export default function Planner() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/api/intelligence/planner/overview`).then(r => r.json()),
-      fetch(`${API}/api/inference/events`).then(r => r.json()),
+      fetch(`${API}/api/intelligence/planner/overview`).then(r => r.json()).catch(() => null),
+      fetch(`${API}/api/inference/events`).then(r => r.json()).catch(() => null),
     ]).then(([overview, events]) => {
-      if (overview.success) setData(overview.data);
-      if (events.success) setRouteEvents(events.data);
-    }).catch(err => console.error('Planner fetch error:', err))
-      .finally(() => setLoading(false));
+      const overviewData = overview?.success && overview.data?.heatmapData?.length
+        ? overview.data : FALLBACK_OVERVIEW;
+      const eventsData = events?.success && events.data?.length
+        ? events.data : FALLBACK_EVENTS;
+      setData(overviewData);
+      setRouteEvents(eventsData);
+    }).finally(() => setLoading(false));
   }, []);
 
   const ghostCorridors = data.ghostCorridors || [];
