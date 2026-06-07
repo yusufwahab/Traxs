@@ -214,6 +214,7 @@ export function useSocket() {
       stopMockSimulation();
       if (wsRef.current) {
         wsRef.current.onclose = null; // prevent reconnect on unmount
+        wsRef.current.onerror = null; // suppress error on intentional close (StrictMode)
         wsRef.current.close();
       }
       booted = false;

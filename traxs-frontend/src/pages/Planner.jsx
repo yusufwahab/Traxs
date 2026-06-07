@@ -54,7 +54,10 @@ export default function Planner() {
     ]).then(([overview, events]) => {
       settled = true;
       clearTimeout(timer);
-      setData(overview?.success && overview.data?.heatmapData?.length ? overview.data : FALLBACK_OVERVIEW);
+      // Only accept API data if corridors have real movement values (not all zeros from seed)
+      const apiOverview = overview?.success && overview.data?.heatmapData?.length ? overview.data : null;
+      const hasRealMovements = apiOverview?.heatmapData?.some(c => (c.passengerMovements ?? 0) > 0);
+      setData(hasRealMovements ? apiOverview : FALLBACK_OVERVIEW);
       setRouteEvents(events?.success && events.data?.length ? events.data : FALLBACK_EVENTS);
     }).catch(() => { settled = true; clearTimeout(timer); })
       .finally(() => setLoading(false));

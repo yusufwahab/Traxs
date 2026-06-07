@@ -42,7 +42,10 @@ export default function Investor() {
       .then(json => {
         settled = true;
         clearTimeout(timer);
-        setRoutes(json.success && json.data?.length ? json.data : FALLBACK_ROUTES);
+        // Only accept API data if it has real analytics values (not all zeros from seed)
+        const apiRoutes = json.success && json.data?.length ? json.data : null;
+        const hasRealData = apiRoutes?.some(r => (r.loadFactor ?? 0) > 0 || (r.viabilityScore ?? 0) > 0);
+        setRoutes(hasRealData ? apiRoutes : FALLBACK_ROUTES);
       })
       .catch(() => { settled = true; clearTimeout(timer); setRoutes(FALLBACK_ROUTES); })
       .finally(() => setLoading(false));

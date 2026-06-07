@@ -375,7 +375,7 @@ function AnimationEngine({ layersRef, ghostData }) {
       });
       heatCircles.current.forEach(({ circle, idx }) => {
         const v = intensities.current[idx];
-        const op = layersRef.current.heatmap ? v * 0.22 : 0;
+        const op = layersRef.current.heatmap && Number.isFinite(v) ? v * 0.22 : 0;
         circle.setStyle({ fillOpacity: op });
       });
     }, 100);
@@ -388,6 +388,7 @@ function AnimationEngine({ layersRef, ghostData }) {
       );
       heatCircles.current.forEach(({ circle, idx }) => {
         const v = intensities.current[idx];
+        if (!Number.isFinite(v)) return;
         const color = v > 0.7 ? '#EF4444' : v > 0.4 ? '#F4A823' : '#2D9E5F';
         if (layersRef.current.heatmap) circle.setStyle({ fillColor: color, fillOpacity: v * 0.22 });
       });
