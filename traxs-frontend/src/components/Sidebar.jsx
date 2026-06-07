@@ -5,11 +5,11 @@ import LiveBadge from './shared/LiveBadge';
 import { useStore } from '../store/useStore';
 
 const NAV = [
-  { to: '/map',        icon: Map,       label: 'Live Map'    },
-  { to: '/planner',    icon: BarChart2,  label: 'Planner'     },
-  { to: '/investor',   icon: TrendingUp, label: 'Investor'    },
-  { to: '/government', icon: Building2,  label: 'Government'  },
-  { to: '/simulator',  icon: Terminal,   label: 'Simulator'   },
+  { to: '/map',        icon: Map,       label: 'Live Network'       },
+  { to: '/planner',    icon: BarChart2,  label: 'Route Intelligence' },
+  { to: '/investor',   icon: TrendingUp, label: 'Corridor Analytics' },
+  { to: '/government', icon: Building2,  label: 'City Health'        },
+  { to: '/simulator',  icon: Terminal,   label: 'Control Room'       },
 ];
 
 const EXPANDED_W = 220;

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useStore } from '../store/useStore';
 import { MOCK_GHOST_CORRIDOR_POLYLINES } from '../data/mockData';
@@ -29,6 +29,73 @@ const redIcon = new L.Icon({
 
 const LAYERS_DEFAULT = { drivers: true, vehicles: true, events: true, corridors: true, passengers: true };
 
+// Reads mapFlyTarget from Zustand and triggers Leaflet flyTo — must be inside MapContainer
+function MapController() {
+  const map = useMap();
+  const mapFlyTarget    = useStore((s) => s.mapFlyTarget);
+  const setMapFlyTarget = useStore((s) => s.setMapFlyTarget);
+
+  useEffect(() => {
+    if (!mapFlyTarget) return;
+    map.flyTo([mapFlyTarget.lat, mapFlyTarget.lng], mapFlyTarget.zoom ?? 14, { duration: 1.5 });
+    setMapFlyTarget(null);
+  }, [mapFlyTarget]);
+
+  return null;
+}
+
+// Creates the ripple DivIcon (CSS keyframes injected separately)
+function makeSimIcon(status) {
+  const color = status === 'active' ? '#2D9E5F' : '#F4A823';
+  const rings = status === 'active'
+    ? `<div style="position:absolute;inset:0;border-radius:50%;border:2px solid ${color};animation:ussdRipple 1.6s ease-out infinite;"></div>
+       <div style="position:absolute;inset:0;border-radius:50%;border:2px solid ${color};animation:ussdRipple 1.6s ease-out 0.55s infinite;"></div>`
+    : '';
+  return L.divIcon({
+    className: '',
+    html: `<div style="position:relative;width:28px;height:28px;">
+             ${rings}
+             <div style="position:absolute;inset:5px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 10px ${color}88;"></div>
+           </div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16],
+  });
+}
+
+// Simulated USSD driver marker — auto-opens popup on mount
+function SimulatedDriverMarker({ driver }) {
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    const m = markerRef.current;
+    if (m) {
+      // brief delay so leaflet has finished placing the marker
+      const t = setTimeout(() => m.openPopup(), 400);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[driver.position.lat, driver.position.lng]}
+      icon={makeSimIcon(driver.status)}
+      zIndexOffset={1000}
+    >
+      <Popup>
+        <div style={{ minWidth: '160px', background: '#161B22', color: '#E6EDF3', padding: '2px' }}>
+          <p style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.08em', color: '#2D9E5F', margin: '0 0 4px' }}>
+            {driver.status === 'active' ? '▶ NEW DRIVER' : '✓ TRIP COMPLETE'}
+          </p>
+          <p style={{ fontSize: '12px', margin: '0 0 2px' }}>Danfo · {driver.routeLabel}</p>
+          <p style={{ color: '#8B949E', fontSize: '11px', margin: 0 }}>Activated via USSD</p>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 function timeAgo(isoString) {
   const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
   if (diff < 60) return `${diff}s ago`;
@@ -40,10 +107,11 @@ export default function LiveMap() {
   const [layers, setLayers] = useState(LAYERS_DEFAULT);
   const [passengerDots, setPassengerDots] = useState([]);
 
-  const activeDrivers     = useStore((s) => s.activeDrivers);
-  const inferredVehicles  = useStore((s) => s.inferredVehicles);
-  const routeEvents       = useStore((s) => s.routeEvents);
+  const activeDrivers       = useStore((s) => s.activeDrivers);
+  const inferredVehicles    = useStore((s) => s.inferredVehicles);
+  const routeEvents         = useStore((s) => s.routeEvents);
   const passengerEventCount = useStore((s) => s.passengerEventCount);
+  const simulatedDriver     = useStore((s) => s.simulatedDriver);
 
   // Local passenger dot animation — new dot every 800ms, max 30 visible, auto-expire 6s
   useEffect(() => {
@@ -64,6 +132,12 @@ export default function LiveMap() {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+      <style>{`
+        @keyframes ussdRipple {
+          0%   { transform: scale(1);   opacity: 0.7; }
+          100% { transform: scale(3.5); opacity: 0;   }
+        }
+      `}</style>
       <MapContainer
         center={[6.5244, 3.3792]}
         zoom={12}
@@ -75,6 +149,13 @@ export default function LiveMap() {
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           maxZoom={19}
         />
+
+        <MapController />
+
+        {/* USSD simulated driver */}
+        {simulatedDriver?.position && (
+          <SimulatedDriverMarker key={simulatedDriver.driverId} driver={simulatedDriver} />
+        )}
 
         {/* Active Drivers */}
         {layers.drivers && activeDrivers.map((d) =>

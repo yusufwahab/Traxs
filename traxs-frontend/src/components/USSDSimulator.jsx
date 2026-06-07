@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -18,6 +20,40 @@ const EVENTS = [
   { label: 'Long Queue',    value: 'long_queue'        },
 ];
 
+const ROUTE_WAYPOINTS = {
+  'Oshodi-Ikeja': [
+    { lat: 6.5568, lng: 3.3486 }, { lat: 6.5612, lng: 3.3498 },
+    { lat: 6.5680, lng: 3.3510 }, { lat: 6.5720, lng: 3.3515 },
+    { lat: 6.5780, lng: 3.3520 }, { lat: 6.6018, lng: 3.3515 },
+  ],
+  'Ikeja-CMS': [
+    { lat: 6.6018, lng: 3.3515 }, { lat: 6.5800, lng: 3.3600 },
+    { lat: 6.5500, lng: 3.3700 }, { lat: 6.5200, lng: 3.3800 },
+    { lat: 6.4900, lng: 3.3900 }, { lat: 6.4541, lng: 3.3947 },
+  ],
+  'CMS-Lekki': [
+    { lat: 6.4541, lng: 3.3947 }, { lat: 6.4550, lng: 3.4200 },
+    { lat: 6.4600, lng: 3.4600 }, { lat: 6.4650, lng: 3.5000 },
+    { lat: 6.4698, lng: 3.5852 },
+  ],
+  'Lekki-Ajah': [
+    { lat: 6.4698, lng: 3.5852 }, { lat: 6.4680, lng: 3.6100 },
+    { lat: 6.4670, lng: 3.6400 }, { lat: 6.4660, lng: 3.6700 },
+    { lat: 6.4650, lng: 3.7000 },
+  ],
+  'Ikorodu-Owutu': [
+    { lat: 6.6194, lng: 3.5060 }, { lat: 6.6100, lng: 3.5100 },
+    { lat: 6.6000, lng: 3.5150 }, { lat: 6.5900, lng: 3.5200 },
+    { lat: 6.5800, lng: 3.5250 },
+  ],
+};
+
+const EN_ROUTE_MSGS = (routeLabel) => [
+  `En route...\n================\n${routeLabel}\nSpeed: 34 km/h\nPassengers: ~12\n\nTRAXS tracking\nyour journey.`,
+  `Checkpoint passed\n================\n2.3km covered\nETA: 14 mins\n\nNetwork signal: ●●●○`,
+  `Almost there...\n================\n4.1km covered\nNext stop: done\n\nAirtime balance:\n₦350 total`,
+];
+
 const TEXTS = {
   IDLE:         'Ready to dial\n\nEnter *384*1#\nthen press CALL',
   CONNECTED:    'TRAXS Mobility\n================\n1. Start Trip\n2. Report Issue\n3. My Earnings\n4. End Trip\n\nReply:',
@@ -29,7 +65,7 @@ const TEXTS = {
   LOADING:      'Connecting...\n\nPlease wait...',
 };
 
-// Typing animation sub-component — remounted via key prop when phase changes
+// ── PhoneScreen: typing animation, remounts via key prop ──────────────────────
 function PhoneScreen({ text, dialBuffer, isDialing }) {
   const [shown, setShown] = useState('');
 
@@ -60,29 +96,22 @@ function PhoneScreen({ text, dialBuffer, isDialing }) {
       overflow: 'hidden',
       whiteSpace: 'pre-wrap',
       color: '#2D9E5F',
-      boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 0 12px rgba(45,158,95,0.04)',
-      position: 'relative',
+      boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
     }}>
-      {/* Status bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', opacity: 0.35, fontSize: '7.5px' }}>
-        <span>TRAXS</span>
-        <span>● ● ●</span>
+        <span>TRAXS</span><span>● ● ●</span>
       </div>
-      {isDialing ? (
-        <span>
-          {dialBuffer}
-          <span style={{ animation: 'ussdCaret 1s step-end infinite' }}>_</span>
-        </span>
-      ) : (
-        <span>{shown}</span>
-      )}
+      {isDialing
+        ? <span>{dialBuffer}<span style={{ animation: 'ussdCaret 1s step-end infinite' }}>_</span></span>
+        : <span>{shown}</span>
+      }
     </div>
   );
 }
 
+// ── PhoneKey ──────────────────────────────────────────────────────────────────
 function PhoneKey({ label, onClick, color = '#232323', textColor = '#cccccc', disabled = false }) {
   const [pressed, setPressed] = useState(false);
-
   return (
     <button
       onClick={disabled ? undefined : onClick}
@@ -90,10 +119,12 @@ function PhoneKey({ label, onClick, color = '#232323', textColor = '#cccccc', di
       onMouseUp={() => setPressed(false)}
       onMouseLeave={() => setPressed(false)}
       style={{
-        background: pressed ? (color === '#232323' ? '#1a6b3c' : color === '#1A6B3C' ? '#2D9E5F' : '#9B0000') : color,
+        background: pressed
+          ? (color === '#232323' ? '#1a6b3c' : color === '#1A6B3C' ? '#2D9E5F' : '#9B0000')
+          : color,
         color: textColor,
         border: `1px solid ${color === '#232323' ? '#3a3a3a' : color}`,
-        borderBottom: pressed ? `1px solid #111` : `3px solid #111`,
+        borderBottom: pressed ? '1px solid #111' : '3px solid #111',
         borderRadius: '5px',
         padding: pressed ? '8px 0 6px' : '7px 0',
         fontSize: '10px',
@@ -112,56 +143,88 @@ function PhoneKey({ label, onClick, color = '#232323', textColor = '#cccccc', di
   );
 }
 
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function USSDSimulator() {
-  const [phase, setPhase] = useState('IDLE');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const startDriverSimulation = useStore((s) => s.startDriverSimulation);
+  const stopDriverSimulation  = useStore((s) => s.stopDriverSimulation);
+  const setMapFlyTarget       = useStore((s) => s.setMapFlyTarget);
+  const simulatedDriver       = useStore((s) => s.simulatedDriver);
+
+  const [phase, setPhase]           = useState('IDLE');
   const [dialBuffer, setDialBuffer] = useState('');
   const [screenText, setScreenText] = useState(TEXTS.IDLE);
-  const [driverId, setDriverId] = useState(null);
+  const [driverId, setDriverId]     = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const prevPhase = useRef('IDLE');
-  const busy = useRef(false);
 
-  // Transient state auto-reset
+  const prevPhase  = useRef('IDLE');
+  const busy       = useRef(false);
+  const navTimerRef = useRef(null);
+
+  // ── Transient state timers ──────────────────────────────────────────────────
   useEffect(() => {
     if (phase === 'ENDED') {
       const t = setTimeout(() => {
-        setPhase('IDLE');
-        setDialBuffer('');
-        setScreenText(TEXTS.IDLE);
-        setDriverId(null);
-        setSelectedRoute(null);
-        busy.current = false;
+        setPhase('IDLE'); setDialBuffer(''); setScreenText(TEXTS.IDLE);
+        setDriverId(null); setSelectedRoute(null); busy.current = false;
       }, 2500);
       return () => clearTimeout(t);
     }
     if (phase === 'INVALID') {
       const t = setTimeout(() => {
         const p = prevPhase.current;
-        setPhase(p);
-        setScreenText(TEXTS[p] || '');
+        setPhase(p); setScreenText(TEXTS[p] || '');
       }, 2000);
       return () => clearTimeout(t);
     }
   }, [phase]);
 
+  // ── Phone status cycling while driver is moving ────────────────────────────
+  useEffect(() => {
+    if (phase !== 'TRIP_STARTED' || !selectedRoute) return;
+    const msgs = EN_ROUTE_MSGS(selectedRoute.label);
+    let i = 0;
+    const id = setInterval(() => {
+      i = (i + 1) % msgs.length;
+      setScreenText(msgs[i]);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [phase, selectedRoute]);
+
+  // ── Detect trip complete from Zustand ──────────────────────────────────────
+  useEffect(() => {
+    if (simulatedDriver?.status === 'complete' && phase === 'TRIP_STARTED') {
+      const routeLabel = selectedRoute?.label || simulatedDriver.routeLabel || '';
+      setPhase('TRIP_COMPLETE');
+      setScreenText(
+        `Trip Complete!\n================\nRoute: ${routeLabel}\nDistance: 5.8km\nDuration: 18 mins\nPassengers: ~12\n\nEarnings: ₦2,000\nAirtime: ₦50 ✓\n\nStart new trip?\n1. Yes  2. Exit`
+      );
+    }
+  }, [simulatedDriver?.status]); // eslint-disable-line
+
+  // ── Cleanup nav timer on unmount ───────────────────────────────────────────
+  useEffect(() => () => { if (navTimerRef.current) clearTimeout(navTimerRef.current); }, []);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
   function go(newPhase, customText) {
     prevPhase.current = phase;
     setPhase(newPhase);
     setScreenText(customText !== undefined ? customText : (TEXTS[newPhase] || ''));
   }
-
   function invalid() {
     prevPhase.current = phase;
     setPhase('INVALID');
     setScreenText(TEXTS.INVALID);
   }
 
+  // ── Key handlers ───────────────────────────────────────────────────────────
   const handleCall = () => {
     if (busy.current) return;
     if (phase !== 'IDLE' && phase !== 'DIALING') return;
     if (dialBuffer === '*384*1#') {
-      setDialBuffer('');
-      go('CONNECTED');
+      setDialBuffer(''); go('CONNECTED');
     } else if (dialBuffer) {
       go('INVALID', 'Invalid number.\nTry *384*1#\n\n[BACK]');
     }
@@ -169,10 +232,11 @@ export default function USSDSimulator() {
 
   const handleEnd = () => {
     if (phase === 'IDLE' || phase === 'ENDED') return;
+    if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    stopDriverSimulation();
     if (driverId) {
       fetch(`${API}/api/drivers/end-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driverId }),
       }).catch(() => {});
     }
@@ -183,16 +247,13 @@ export default function USSDSimulator() {
     if (phase !== 'DIALING') return;
     const next = dialBuffer.slice(0, -1);
     setDialBuffer(next);
-    if (!next) {
-      setPhase('IDLE');
-      setScreenText(TEXTS.IDLE);
-    }
+    if (!next) { setPhase('IDLE'); setScreenText(TEXTS.IDLE); }
   };
 
   const handleKey = async (key) => {
     if (busy.current) return;
 
-    // Append to dial buffer
+    // Dial buffer
     if (phase === 'IDLE' || phase === 'DIALING') {
       setDialBuffer(prev => prev + key);
       setPhase('DIALING');
@@ -222,7 +283,7 @@ export default function USSDSimulator() {
       invalid(); return;
     }
 
-    // Route selection
+    // Route selection → fires real API + starts map simulation
     if (phase === 'ROUTE_SELECT') {
       const idx = parseInt(key, 10) - 1;
       if (idx >= 0 && idx < ROUTES.length) {
@@ -230,6 +291,8 @@ export default function USSDSimulator() {
         setSelectedRoute(route);
         busy.current = true;
         go('LOADING');
+
+        let newDriverId = null;
         try {
           const phone = `080${Math.floor(Math.random() * 1e8).toString().padStart(8, '0')}`;
           const res = await fetch(`${API}/api/drivers/activate`, {
@@ -237,10 +300,28 @@ export default function USSDSimulator() {
             body: JSON.stringify({ phoneNumber: phone, deviceType: 'feature_phone', vehicleType: 'danfo', homePark: route.origin }),
           });
           const json = await res.json();
-          if (json.success) setDriverId(json.data.driverId);
+          if (json.success) newDriverId = json.data.driverId;
         } catch {}
-        go('TRIP_STARTED', `Trip Started!\n================\nRoute: ${route.label}\nAirtime: +₦50\n\nSafe travels!\nDriver ID saved.\n\n[END to exit]`);
+
+        if (newDriverId) setDriverId(newDriverId);
+
+        // Start movement simulation in Zustand (survives navigation)
+        const waypoints = ROUTE_WAYPOINTS[route.label] || [{ lat: route.lat, lng: route.lng }];
+        startDriverSimulation(newDriverId || `SIM-${Date.now()}`, route.label, waypoints);
+
+        // Pan the map to starting position
+        setMapFlyTarget({ lat: waypoints[0].lat, lng: waypoints[0].lng, zoom: 14 });
+
+        // Trip confirmation on phone
+        go('TRIP_STARTED',
+          `Trip Started!\n================\nRoute: ${route.label}\nVehicle: Danfo\nAirtime: +₦50 credited\n\nJoining network...`
+        );
         busy.current = false;
+
+        // Navigate to Live Network map after 2 seconds if not already there
+        navTimerRef.current = setTimeout(() => {
+          if (location.pathname !== '/map') navigate('/map');
+        }, 2000);
         return;
       }
       invalid(); return;
@@ -271,10 +352,26 @@ export default function USSDSimulator() {
       }
       invalid(); return;
     }
+
+    // Trip complete — 1 = new trip, 2 = exit
+    if (phase === 'TRIP_COMPLETE') {
+      if (key === '1') {
+        stopDriverSimulation();
+        setDriverId(null);
+        go('ROUTE_SELECT');
+        return;
+      }
+      if (key === '2') {
+        stopDriverSimulation();
+        go('ENDED');
+        return;
+      }
+      invalid(); return;
+    }
   };
 
   const isDialing = phase === 'IDLE' || phase === 'DIALING';
-  const canInput  = ['IDLE','DIALING','CONNECTED','ROUTE_SELECT','REPORT_TYPE'].includes(phase);
+  const canInput  = ['IDLE','DIALING','CONNECTED','ROUTE_SELECT','REPORT_TYPE','TRIP_COMPLETE'].includes(phase);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -295,7 +392,7 @@ export default function USSDSimulator() {
         background: 'linear-gradient(180deg, #1e1e1e 0%, #161616 100%)',
         borderRadius: '28px',
         border: '3px solid #2d2d2d',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.4)',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.04)',
         paddingBottom: '16px',
         userSelect: 'none',
         position: 'relative',
@@ -315,15 +412,10 @@ export default function USSDSimulator() {
 
         {/* Screen bezel */}
         <div style={{ margin: '0 10px 8px', background: '#0d0d0d', borderRadius: '6px', padding: '4px', border: '1px solid #1a1a1a' }}>
-          <PhoneScreen
-            key={phase}
-            text={screenText}
-            dialBuffer={dialBuffer}
-            isDialing={isDialing}
-          />
+          <PhoneScreen key={phase} text={screenText} dialBuffer={dialBuffer} isDialing={isDialing} />
         </div>
 
-        {/* D-pad / nav row */}
+        {/* CALL / DEL / END row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '0 10px 4px' }}>
           <PhoneKey label="CALL" onClick={handleCall} color="#1A6B3C" textColor="#ffffff" />
           <PhoneKey label="DEL"  onClick={handleDelete} />
@@ -336,12 +428,7 @@ export default function USSDSimulator() {
         {/* Number keypad */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '0 10px' }}>
           {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-            <PhoneKey
-              key={key}
-              label={key}
-              onClick={() => handleKey(key)}
-              disabled={!canInput}
-            />
+            <PhoneKey key={key} label={key} onClick={() => handleKey(key)} disabled={!canInput} />
           ))}
         </div>
 
@@ -354,9 +441,9 @@ export default function USSDSimulator() {
         }} />
       </div>
 
-      {/* Hint row */}
-      <div style={{ marginTop: '14px', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        {['*', '3', '8', '4', '*', '1', '#'].map((k, i) => (
+      {/* Key hint row */}
+      <div style={{ marginTop: '14px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+        {['*','3','8','4','*','1','#'].map((k, i) => (
           <span key={i} style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: '22px', height: '22px',
@@ -364,14 +451,11 @@ export default function USSDSimulator() {
             borderRadius: '3px', color: '#8B949E', fontFamily: 'monospace', fontSize: '11px',
           }}>{k}</span>
         ))}
-        <span style={{ color: '#8B949E', fontSize: '11px', alignSelf: 'center' }}>then CALL</span>
+        <span style={{ color: '#8B949E', fontSize: '11px' }}>→ CALL</span>
       </div>
 
       <style>{`
-        @keyframes ussdCaret {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
-        }
+        @keyframes ussdCaret { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
       `}</style>
     </div>
   );
